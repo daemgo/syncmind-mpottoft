@@ -1,0 +1,297 @@
+# Skill 路由命中率测试集
+#
+# 每个 case 结构：
+#   id: 唯一标识
+#   input: 用户原始输入
+#   expected: 期望触发的 skill name，或 "none"（对话回答，不触发 skill），或 "followup"（主 agent 写 followups.json，不启 skill）
+#   category: 归类，用于分组统计
+#   rationale: 设计该用例的原因
+#
+# 约定：
+# - expected="none" 表示模型应直接对话回答，不调用 Skill 工具
+# - expected="followup" 表示主 agent 应写 docs/customer/followups.json（不启 skill）
+# - 多 skill 触发场景（如"拜访了X，帮我出方案"）expected 取第一优先级
+
+cases:
+  # ===== 客户身份铁律 =====
+  # 用户提"客户/他们/这家"时，模型应读 profile.json 而非反问身份
+  # 这类 case 对应行为：第一个动作是 Read docs/customer/profile.json
+
+  - id: identity-01
+    input: "客户说他们要做一个 MES 系统，帮我整理下"
+    expected: requirements
+    category: 客户身份铁律
+    rationale: 典型"客户说+需求"组合，MiniMax 下高频被问"客户是谁"
+
+  - id: identity-02
+    input: "他们 CTO 觉得我们方案里的监控模块不够完善"
+    expected: requirements
+    category: 客户身份铁律
+    rationale: '"他们"指代当前客户，应直接写入需求反馈'
+
+  - id: identity-03
+    input: "这家公司的老板拍板了，决定用国产化方案"
+    expected: sales-guide
+    category: 客户身份铁律
+    rationale: 决策链变化，走 sales-guide 更新
+
+  - id: identity-04
+    input: "客户提到的需求是希望支持多租户"
+    expected: requirements
+    category: 客户身份铁律
+    rationale: 用户汇报的典型模式之一
+
+  # ===== requirements 冷启动 =====
+
+  - id: req-cold-01
+    input: "整理这个客户的需求"
+    expected: requirements
+    category: requirements 冷启动
+
+  - id: req-cold-02
+    input: "基于拜访记录分析一下需求"
+    expected: requirements
+    category: requirements 冷启动
+
+  - id: req-cold-03
+    input: "帮我整理客户需求文档"
+    expected: requirements
+    category: requirements 冷启动
+
+  - id: req-cold-04
+    input: "提炼一下他们的核心需求"
+    expected: requirements
+    category: requirements 冷启动
+
+  # ===== requirements 更新（核心 bug 场景） =====
+
+  - id: req-update-01
+    input: "补充需求信息"
+    expected: requirements
+    category: requirements 更新
+    rationale: MiniMax 下实测会误走 spec-writer
+
+  - id: req-update-02
+    input: "再补一条需求：客户希望支持 SSO 单点登录"
+    expected: requirements
+    category: requirements 更新
+
+  - id: req-update-03
+    input: "把数据大屏这条需求优先级改成 must-have"
+    expected: requirements
+    category: requirements 更新
+
+  - id: req-update-04
+    input: "删掉移动端那条需求"
+    expected: requirements
+    category: requirements 更新
+
+  - id: req-update-05
+    input: "新增一条需求：支持国产化适配"
+    expected: requirements
+    category: requirements 更新
+
+  - id: req-update-06
+    input: "调整一下需求，第三条改成支持多租户"
+    expected: requirements
+    category: requirements 更新
+
+  - id: req-update-07
+    input: "我来回答之前的待确认问题"
+    expected: requirements
+    category: requirements 更新
+
+  - id: req-update-08
+    input: "需求定版"
+    expected: requirements
+    category: requirements 更新
+
+  # ===== requirements vs spec-writer 冲突场景 =====
+  # 这些是最容易路由错的边界情况
+
+  - id: conflict-01
+    input: "补充一下需求"
+    expected: requirements
+    category: requirements vs spec 冲突
+    rationale: 只有"需求"二字，不应误走 spec-writer
+
+  - id: conflict-02
+    input: "生成产品说明书"
+    expected: spec-writer
+    category: requirements vs spec 冲突
+
+  - id: conflict-03
+    input: "写个 PRD"
+    expected: spec-writer
+    category: requirements vs spec 冲突
+
+  - id: conflict-04
+    input: "出 spec"
+    expected: spec-writer
+    category: requirements vs spec 冲突
+
+  - id: conflict-05
+    input: "需求收集完了，下一步怎么办"
+    expected: none
+    category: requirements vs spec 冲突
+    rationale: 问 how，不是指令，应对话回答
+
+  - id: conflict-06
+    input: "把客户需求整理成 PRD"
+    expected: spec-writer
+    category: requirements vs spec 冲突
+    rationale: 明确说 PRD，应走 spec-writer（尽管含"需求"）
+
+  # ===== profile =====
+
+  - id: profile-01
+    input: "为阳光电源生成客户档案"
+    expected: profile
+    category: profile
+
+  - id: profile-02
+    input: "帮我调研一下这家企业"
+    expected: profile
+    category: profile
+
+  - id: profile-03
+    input: "生成面客准备档案"
+    expected: profile
+    category: profile
+
+  - id: profile-04
+    input: "这家公司最近融资了B轮"
+    expected: profile
+    category: profile
+    rationale: 企业信息更新，应更新档案
+
+  # ===== sales-guide =====
+
+  - id: sales-01
+    input: "怎么打这个客户"
+    expected: sales-guide
+    category: sales-guide
+
+  - id: sales-02
+    input: "生成销售作战指南"
+    expected: sales-guide
+    category: sales-guide
+
+  - id: sales-03
+    input: "客户在和金蝶对比，我们怎么应对"
+    expected: sales-guide
+    category: sales-guide
+    rationale: 竞对情报，应更新 sales-guide
+
+  # ===== plan-writer =====
+
+  - id: plan-01
+    input: "出一份方案"
+    expected: plan-writer
+    category: plan-writer
+
+  - id: plan-02
+    input: "基于需求生成解决方案"
+    expected: plan-writer
+    category: plan-writer
+
+  - id: plan-03
+    input: "写个项目方案"
+    expected: plan-writer
+    category: plan-writer
+
+  # ===== 消歧：拜访相关 =====
+
+  - id: visit-01
+    input: "今天拜访了张总，聊了 2 小时"
+    expected: followup
+    category: 消歧-拜访
+    rationale: 过去时态，写 followups.json
+
+  - id: visit-02
+    input: "生成拜访方案"
+    expected: plan-writer
+    category: 消歧-拜访
+    rationale: 未来规划，不是 followup；"拜访方案"按 plan-writer 触发词走方案
+
+  - id: visit-03
+    input: "下周要去拜访客户，帮我准备一下"
+    expected: sales-guide
+    category: 消歧-拜访
+    rationale: 未来意图，走销售指南
+
+  - id: visit-04
+    input: "拜访策略怎么定"
+    expected: sales-guide
+    category: 消歧-拜访
+
+  - id: visit-05
+    input: "昨天见了他们的 CIO，他提到要做 AI"
+    expected: requirements
+    category: 消歧-拜访
+    rationale: 客户互动 + 需求信息；真实运行时先写 followup，再触发 requirements
+
+  # ===== 短确认词 =====
+
+  - id: confirm-01
+    input: "好"
+    expected: none
+    category: 短确认词
+    rationale: 执行上轮提议，不触发 skill
+
+  - id: confirm-02
+    input: "可以"
+    expected: none
+    category: 短确认词
+
+  - id: confirm-03
+    input: "继续"
+    expected: none
+    category: 短确认词
+
+  # ===== 提问（对话回答，不触发 skill） =====
+
+  - id: qa-01
+    input: "这个客户适合什么方案类型？"
+    expected: none
+    category: 提问
+    rationale: 问 why/what，对话回答
+
+  - id: qa-02
+    input: "为什么 MES 系统推荐自研而不是采购"
+    expected: none
+    category: 提问
+
+  # ===== 多信息并存（取第一优先级） =====
+
+  - id: multi-01
+    input: "今天拜访了阳光电源，客户说他们要做数据中台"
+    expected: requirements
+    category: 多信息并存
+    rationale: 客户互动 + 需求；真实运行时先写 followup，再触发 requirements
+
+  - id: multi-02
+    input: "客户在对比金蝶，而且提出要支持多租户"
+    expected: requirements
+    category: 多信息并存
+    rationale: 竞对 + 需求，按优先级需求先（因规则是：互动→档案→需求→销售）
+
+  # ===== 其他易混 =====
+
+  - id: misc-01
+    input: "更新一下档案"
+    expected: none
+    category: 其他
+    rationale: 新规则下"档案"过于泛化，避免误把我方企业档案路由成客户 /profile
+
+  - id: misc-02
+    input: "帮我生成一份销售指南和方案"
+    expected: sales-guide
+    category: 其他
+    rationale: 顺序依次，sales-guide 先
+
+  - id: misc-03
+    input: "最近有什么进展"
+    expected: none
+    category: 其他
+    rationale: 闲聊/查询，不触发 skill

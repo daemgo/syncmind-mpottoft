@@ -1,0 +1,17 @@
+{
+  "name": "syncmind-routing-test",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "node run.mjs",
+    "test:minimax-m2": "TEST_MODEL=MiniMax-M2 node run.mjs",
+    "test:minimax-text": "TEST_MODEL=MiniMax-Text-01 node run.mjs",
+    "test:qwen": "TEST_MODEL=qwen3-max node run.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.40.0",
+    "js-yaml": "^4.1.0",
+    "openai": "^4.104.0"
+  }
+}
